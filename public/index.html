@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS S3 管理工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .bucket-list {
+            margin-top: 10px;
+        }
+
+        .bucket-item {
+            padding: 10px;
+            background: #f8f9fa;
+            margin: 5px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .bucket-item:hover {
+            background: #e9ecef;
+        }
+
+        .bucket-item.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        .file-list {
+            margin-top: 15px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .file-actions button {
+            padding: 5px 15px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .upload-area input[type=file] {
+            margin: 10px 0;
+        }
+
+        #selectedFileName {
+            margin: 10px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🪣 AWS S3 管理工具</h1>
+            
+            <form id="connectionForm">
+                <div class="form-group">
+                    <label for="accessKeyId">Access Key ID</label>
+                    <input type="text" id="accessKeyId" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="secretAccessKey">Secret Access Key</label>
+                    <input type="password" id="secretAccessKey" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="region">Region</label>
+                    <select id="region">
+                        <option value="ap-east-2">Asia Pacific (Taipei)</option>
+                        <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                        <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                        <option value="us-east-1">US East (N. Virginia)</option>
+                        <option value="us-west-2">US West (Oregon)</option>
+                        <option value="eu-west-1">Europe (Ireland)</option>
+                    </select>
+                </div>
+
+                <button type="submit">連接 S3</button>
+            </form>
+
+            <div id="connectionResult" class="result hidden"></div>
+        </div>
+
+        <div id="bucketsCard" class="card hidden">
+            <h2>📦 選擇 Bucket</h2>
+            <div id="bucketsList" class="bucket-list"></div>
+        </div>
+
+        <div id="filesCard" class="card hidden">
+            <h2>📁 檔案管理</h2>
+            <p><strong>當前 Bucket:</strong> <span id="currentBucket"></span></p>
+            
+            <div class="upload-area">
+                <h3>上傳檔案</h3>
+                <input type="file" id="fileInput">
+                <p id="selectedFileName"></p>
+                <button id="uploadBtn" class="hidden">上傳</button>
+            </div>
+
+            <button id="refreshBtn">🔄 重新整理</button>
+            
+            <div id="filesList" class="file-list"></div>
+            <div id="filesLoading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>載入中...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
